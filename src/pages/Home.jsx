@@ -71,7 +71,7 @@ export default function Home() {
           story lives on How It Works for people who want it.
         */}
         <p className="hero-founded">
-          Founded in 2025 by high school students · Built through DECA
+          Founded in 2025 by an Appleton East senior · Built through DECA
         </p>
       </section>
 
