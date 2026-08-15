@@ -97,8 +97,10 @@ export const TIME_OPTIONS = [
 export const BRAND = {
   name: 'NO MO CO.',
   tagline: 'Student owned • Local • Affordable • Reliable',
-  phone: import.meta.env.VITE_CONTACT_PHONE || '(920) 555-0134',
-  email: import.meta.env.VITE_CONTACT_EMAIL || 'hello@nomoco.com',
+  // These are the real contact details. .env can override them per
+  // environment, but the site is correct out of the box without it.
+  phone: import.meta.env.VITE_CONTACT_PHONE || '(920) 636-3208',
+  email: import.meta.env.VITE_CONTACT_EMAIL || 'apolomassingue@gmail.com',
 };
 
 /** Flip to true in .env once the Stripe Cloud Function is deployed. */
