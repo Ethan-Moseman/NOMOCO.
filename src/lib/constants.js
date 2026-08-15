@@ -105,3 +105,14 @@ export const BRAND = {
 
 /** Flip to true in .env once the Stripe Cloud Function is deployed. */
 export const STRIPE_ENABLED = import.meta.env.VITE_STRIPE_ENABLED === 'true';
+
+/**
+ * Photo uploads need Cloud Storage, which Firebase now puts behind the paid
+ * Blaze plan on new projects. Off by default so the upload boxes do not sit
+ * there failing when Storage was never enabled.
+ *
+ * To turn photos on: enable Storage in the Firebase Console, deploy
+ * storage.rules, then set VITE_ENABLE_PHOTOS=true in .env and rebuild.
+ * Nothing else needs to change — the upload code is already written.
+ */
+export const PHOTOS_ENABLED = import.meta.env.VITE_ENABLE_PHOTOS === 'true';

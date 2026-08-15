@@ -28,7 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import { createProperty, getPropertiesForOwner, updatePropertyDetails } from '../../services/properties';
 import { createConsultation } from '../../services/consultations';
 import { uploadPhotos } from '../../services/photos';
-import { TIME_OPTIONS } from '../../lib/constants';
+import { PHOTOS_ENABLED, TIME_OPTIONS } from '../../lib/constants';
 import {
   formatPhoneInput,
   friendlyError,
@@ -318,21 +318,29 @@ export default function RequestConsultation() {
             />
           </Field>
 
-          <Field label="Photos of your lawn (optional)" hint="Up to 5 photos. Helpful but never required.">
-            <input
-              className="input"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            />
-          </Field>
+          {/* Hidden unless Cloud Storage is enabled — see PHOTOS_ENABLED. */}
+          {PHOTOS_ENABLED ? (
+            <>
+              <Field
+                label="Photos of your lawn (optional)"
+                hint="Up to 5 photos. Helpful but never required."
+              >
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                />
+              </Field>
 
-          {files.length ? (
-            <InfoBanner>
-              {files.length} photo{files.length === 1 ? '' : 's'} will be uploaded
-              with your request.
-            </InfoBanner>
+              {files.length ? (
+                <InfoBanner>
+                  {files.length} photo{files.length === 1 ? '' : 's'} will be
+                  uploaded with your request.
+                </InfoBanner>
+              ) : null}
+            </>
           ) : null}
 
           <Button type="submit" size="lg" full loading={saving}>

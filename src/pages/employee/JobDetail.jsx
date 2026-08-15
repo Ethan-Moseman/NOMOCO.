@@ -31,7 +31,7 @@ import {
   startJob,
 } from '../../services/jobs';
 import { uploadPhoto } from '../../services/photos';
-import { JOB_STATUS } from '../../lib/constants';
+import { JOB_STATUS, PHOTOS_ENABLED } from '../../lib/constants';
 import {
   friendlyError,
   mapsUrl,
@@ -224,15 +224,17 @@ export default function EmployeeJobDetail() {
 
         {isMine && job.status === JOB_STATUS.IN_PROGRESS ? (
           <>
-            <Field label="Finished photo (optional)">
-              <input
-                className="input"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-              />
-            </Field>
+            {PHOTOS_ENABLED ? (
+              <Field label="Finished photo (optional)">
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                />
+              </Field>
+            ) : null}
             <Button size="lg" full loading={working} onClick={handleComplete}>
               MARK COMPLETE
             </Button>

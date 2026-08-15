@@ -24,6 +24,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getPropertiesForOwner, updatePropertyDetails } from '../../services/properties';
 import { updateOwnProfile } from '../../services/users';
 import { uploadPhotos } from '../../services/photos';
+import { PHOTOS_ENABLED } from '../../lib/constants';
 import { formatPhoneInput, friendlyError, isValidPhone, money } from '../../lib/format';
 
 export default function MyAccount() {
@@ -230,15 +231,17 @@ export default function MyAccount() {
               </Button>
             </form>
 
-            <Field label="Add lawn photos (optional)" hint="Up to 5 at a time.">
-              <input
-                className="input"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => addPhotos(Array.from(e.target.files || []))}
-              />
-            </Field>
+            {PHOTOS_ENABLED ? (
+              <Field label="Add lawn photos (optional)" hint="Up to 5 at a time.">
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => addPhotos(Array.from(e.target.files || []))}
+                />
+              </Field>
+            ) : null}
             <PhotoStrip photos={property.photos} />
           </Card>
         </>
