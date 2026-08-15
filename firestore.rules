@@ -1,0 +1,266 @@
+rules_version = '2';
+
+// =============================================================================
+// NO MO CO. — Firestore Security Rules
+// =============================================================================
+// THE MOST IMPORTANT IDEA IN THIS FILE
+//
+// Firestore rules can hide whole DOCUMENTS. They cannot hide individual FIELDS
+// inside a document. So money is never stored on the job document:
+//
+//   jobs/{jobId}        -> operational info only. NO money fields, ever.
+//   jobPay/{jobId}      -> employeePay      (employees + admin can read)
+//   jobBilling/{jobId}  -> customerPrice    (that customer + admin can read)
+//
+// An employee's browser physically cannot fetch customerPrice. The database
+// refuses the request. This is not "hidden in the UI" — it is enforced here.
+//
+// ROLES
+//   admin    -> a document exists at admins/{uid}.    NOBODY can write this
+//               collection from the app. You create it by hand in the Firebase
+//               Console. That is what makes admin impossible to self-assign.
+//   employee -> a document exists at employees/{uid} with approved == true.
+//               Only an admin can create or approve it.
+//   customer -> any signed-in user. This is the only role signup can produce.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isApprovedEmployee() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/employees/$(request.auth.uid))
+        && get(/databases/$(database)/documents/employees/$(request.auth.uid)).data.approved == true;
+    }
+
+    // The set of fields an update is trying to change.
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Read the operational job doc from inside a rule (used by jobPay).
+    function job(jobId) {
+      return get(/databases/$(database)/documents/jobs/$(jobId)).data;
+    }
+
+    // -------------------------------------------------------------- admins
+    // Created ONLY from the Firebase Console. No client may ever write here,
+    // which is what prevents anyone from making themselves an admin.
+    match /admins/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------- employees
+    // The employee roster. Admin invites / approves. Employees may read their
+    // own record so the app knows they are approved.
+    match /employees/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------------------- users
+    // Profile info. Contains phone + email, so employees cannot read customer
+    // profiles — everything an employee needs is copied onto the job document.
+    match /users/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      // A new account is ALWAYS a customer. Signup cannot request another role.
+      allow create: if isSelf(uid)
+        && request.resource.data.role == 'customer'
+        && request.resource.data.uid == uid;
+
+      // Users may edit their own contact details but never their own role.
+      allow update: if isAdmin() || (
+        isSelf(uid)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.uid == resource.data.uid
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------ properties
+    // One property per customer for the MVP (the model supports more later).
+    // customerPrice lives here so the customer can see their own price, and
+    // employees are never allowed to read this collection at all.
+    match /properties/{propertyId} {
+      allow get, list: if isAdmin()
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+
+      // A customer creates their own property, unapproved and with no price.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.approved == false
+        && request.resource.data.customerPrice == null;
+
+      // The customer may edit address / notes / photos. They may NOT approve
+      // their own property or set their own price.
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.approved == resource.data.approved
+        && request.resource.data.customerPrice == resource.data.customerPrice
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // --------------------------------------------------------- consultations
+    match /consultations/{consultationId} {
+      allow get, list: if isAdmin()
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'requested';
+
+      // Only an admin schedules / completes / approves. A customer may cancel.
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && resource.data.ownerId == request.auth.uid
+        && changedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.status == 'cancelled'
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------------ jobs
+    // OPERATIONAL DATA ONLY — NO MONEY FIELDS ARE ALLOWED IN THIS COLLECTION.
+    // Read by: the customer who owns it, any approved employee while it is
+    // available or assigned to them, and admins.
+    match /jobs/{jobId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid)
+        || (isApprovedEmployee() && (
+              resource.data.status == 'available'
+              || resource.data.assignedEmployeeId == request.auth.uid
+           ));
+
+      // A customer requests a mow. The property must be theirs AND approved.
+      // They cannot make it available, assign it, or price it.
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'requested'
+        && request.resource.data.assignedEmployeeId == null
+        && get(/databases/$(database)/documents/properties/$(request.resource.data.propertyId)).data.ownerId == request.auth.uid
+        && get(/databases/$(database)/documents/properties/$(request.resource.data.propertyId)).data.approved == true
+      );
+
+      allow update: if isAdmin()
+
+        // --- employee accepts an available job -----------------------------
+        // Because the rule tests resource.data.status == 'available' against
+        // the committed document, a second employee's accept is rejected by
+        // the database. Combined with the client transaction, two employees
+        // can never take the same job.
+        || (isApprovedEmployee()
+            && resource.data.status == 'available'
+            && resource.data.assignedEmployeeId == null
+            && request.resource.data.status == 'accepted'
+            && request.resource.data.assignedEmployeeId == request.auth.uid
+            && changedKeys().hasOnly(['status', 'assignedEmployeeId', 'assignedEmployeeName', 'acceptedAt']))
+
+        // --- assigned employee starts the job ------------------------------
+        || (isApprovedEmployee()
+            && resource.data.assignedEmployeeId == request.auth.uid
+            && resource.data.status == 'accepted'
+            && request.resource.data.status == 'in_progress'
+            && changedKeys().hasOnly(['status', 'startedAt']))
+
+        // --- assigned employee completes the job ---------------------------
+        || (isApprovedEmployee()
+            && resource.data.assignedEmployeeId == request.auth.uid
+            && resource.data.status == 'in_progress'
+            && request.resource.data.status == 'completed'
+            && changedKeys().hasOnly(['status', 'completedAt', 'completionPhotoUrl']))
+
+        // --- customer cancels before anyone is working on it ---------------
+        || (isSignedIn()
+            && resource.data.ownerId == request.auth.uid
+            && resource.data.status in ['requested', 'available']
+            && request.resource.data.status == 'cancelled'
+            && changedKeys().hasOnly(['status', 'cancelledAt']));
+
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------- jobPay
+    // employeePay ONLY. Customers are not employees, so this rule denies them.
+    // Employees read one document at a time by job id (getDoc), which is why a
+    // cross-document get() is safe here.
+    match /jobPay/{jobId} {
+      allow get: if isAdmin() || (
+        isApprovedEmployee() && (
+          job(jobId).status == 'available'
+          || job(jobId).assignedEmployeeId == request.auth.uid
+        )
+      );
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ------------------------------------------------------------ jobBilling
+    // customerPrice + payment status. Employees can NEVER read this — there is
+    // no branch of this rule that an employee can satisfy.
+    match /jobBilling/{jobId} {
+      allow get: if isAdmin()
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow list: if isAdmin()
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+
+      // A customer creates this document at the moment they request a mow, so
+      // the price is locked in at request time. They cannot invent a number:
+      // the price MUST equal the one an admin set on their own property, and
+      // the job must start out unpaid.
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.paymentStatus == 'unpaid'
+        && request.resource.data.paidAt == null
+        && get(/databases/$(database)/documents/properties/$(request.resource.data.propertyId)).data.ownerId == request.auth.uid
+        && get(/databases/$(database)/documents/properties/$(request.resource.data.propertyId)).data.approved == true
+        && request.resource.data.customerPrice ==
+             get(/databases/$(database)/documents/properties/$(request.resource.data.propertyId)).data.customerPrice
+      );
+
+      // Changing a price or marking something paid is admin-only. The Stripe
+      // webhook uses the Admin SDK, which bypasses these rules entirely.
+      allow update, delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------- earnings
+    // What we owe each employee. Employees see only their own lines.
+    match /earnings/{earningId} {
+      allow get, list: if isAdmin()
+        || (isSignedIn() && resource.data.employeeId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- catch-all
+    // Anything not explicitly listed above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

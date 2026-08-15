@@ -1,0 +1,24 @@
+{
+  "name": "nomoco",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "NO MO CO. — lawn care booking and dispatch",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore:rules,storage",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage"
+  },
+  "dependencies": {
+    "firebase": "^10.14.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "vite": "^5.4.9"
+  }
+}

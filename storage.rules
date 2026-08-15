@@ -1,0 +1,50 @@
+rules_version = '2';
+
+// =============================================================================
+// NO MO CO. — Cloud Storage Security Rules
+// =============================================================================
+// Photos only: lawn / property pictures and job completion pictures.
+//
+// NOTE: Storage rules cannot read Firestore, so we cannot check "is this user
+// an admin?" here. The tradeoff we chose for the MVP: any SIGNED-IN user may
+// read photos (employees genuinely need to see the property, and admins need
+// to see everything), but only the owning user may write to their own folder.
+// No financial data is ever stored in Storage, so nothing sensitive leaks.
+//
+// Upgrade later: put a signed-URL Cloud Function in front of reads if you want
+// per-property read control.
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImageUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Property / consultation photos uploaded by a customer.
+    match /propertyPhotos/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && isImageUnder10MB();
+    }
+
+    // "Job finished" photos uploaded by the employee who did the work.
+    match /jobPhotos/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && isImageUnder10MB();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
