@@ -65,6 +65,14 @@ export default function Home() {
           <span className="trust-pill">Affordable</span>
           <span className="trust-pill">Reliable</span>
         </div>
+
+        {/*
+          One line only. The home page has to stay uncluttered — the full
+          story lives on How It Works for people who want it.
+        */}
+        <p className="hero-founded">
+          Founded in 2025 by high school students · Built through DECA
+        </p>
       </section>
 
       <div className="home-actions">

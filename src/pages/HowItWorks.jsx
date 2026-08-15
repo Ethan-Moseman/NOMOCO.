@@ -38,6 +38,26 @@ export default function HowItWorks() {
       </Card>
 
       <Card style={{ marginTop: 12 }}>
+        <h3>Who we are</h3>
+        <p className="muted small">
+          NO MO CO. started in 2025. We are high school seniors, and we run
+          this the way we were taught to run a business — through DECA, our
+          school's business and entrepreneurship program.
+        </p>
+        <p className="muted small">
+          DECA is where we learned the parts of a business that are not
+          mowing: how to price a job honestly, how to track what it actually
+          costs us, and how to treat customers like customers instead of
+          favors. That is why there is a free consultation instead of a guess
+          over text, one flat price instead of a surprise at the end, and a
+          website instead of a phone number you have to remember.
+        </p>
+        <p className="muted small">
+          You are hiring students. You are not getting a student operation.
+        </p>
+      </Card>
+
+      <Card style={{ marginTop: 12 }}>
         <h3>Why the free consultation first?</h3>
         <p className="muted small">
           Every lawn is different. Looking at it in person means we can quote
