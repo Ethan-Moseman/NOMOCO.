@@ -1,0 +1,14 @@
+<!--
+  NO MO CO. tab icon. Three blades of grass over a mown line.
+  Kept as a handful of shapes on purpose so it still reads at 16x16.
+  Swap this file if you get a real logo drawn — nothing else needs to change.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NO MO CO.">
+  <rect width="64" height="64" rx="14" fill="#166534" />
+  <g fill="#86efac">
+    <path d="M16 49 Q13 32 26 19 Q19 35 23 49 Z" />
+    <path d="M29 49 Q29 27 32 12 Q37 29 36 49 Z" />
+    <path d="M41 49 Q47 33 51 21 Q46 37 48 49 Z" />
+  </g>
+  <rect x="11" y="48" width="42" height="6" rx="3" fill="#dcfce7" />
+</svg>

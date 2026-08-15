@@ -35,6 +35,23 @@ export default function Home() {
   return (
     <Page>
       <section className="hero">
+        {/*
+          The banner shows a photo if you put one at public/hero.jpg, and a
+          clean green gradient if you have not yet. It is a CSS background
+          rather than an <img>, so a missing file degrades quietly instead of
+          showing a broken-image icon.
+        */}
+        <div className="hero-photo" aria-hidden="true">
+          <svg className="hero-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <g fill="currentColor">
+              <path d="M16 49 Q13 32 26 19 Q19 35 23 49 Z" />
+              <path d="M29 49 Q29 27 32 12 Q37 29 36 49 Z" />
+              <path d="M41 49 Q47 33 51 21 Q46 37 48 49 Z" />
+            </g>
+            <rect x="11" y="48" width="42" height="6" rx="3" fill="currentColor" />
+          </svg>
+        </div>
+
         <h1 className="hero-logo">{BRAND.name}</h1>
         <p className="hero-tagline">{BRAND.tagline}</p>
         <p className="hero-sub">

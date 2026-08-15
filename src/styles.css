@@ -454,8 +454,44 @@ a:hover { text-decoration: underline; }
 /* ------------------------------------------------------------------- home */
 .hero {
   text-align: center;
-  padding: 28px 0 20px;
+  padding: 20px 0;
 }
+
+/*
+  Drop a wide photo of a freshly cut lawn at public/hero.jpg and it appears
+  here automatically. With no file present the gradient shows on its own and
+  nothing looks broken.
+*/
+.hero-photo {
+  height: 160px;
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  background-color: var(--green);
+  background-image: linear-gradient(
+      160deg,
+      rgba(20, 83, 45, 0.72) 0%,
+      rgba(22, 101, 52, 0.55) 100%
+    ),
+    url('/hero.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+.hero-mark {
+  width: 64px;
+  height: 64px;
+  color: #ffffff;
+  opacity: 0.95;
+}
+
+@media (min-width: 720px) {
+  .hero-photo { height: 220px; }
+  .hero-mark { width: 80px; height: 80px; }
+}
+
 .hero-logo {
   font-size: 2.5rem;
   font-weight: 900;
