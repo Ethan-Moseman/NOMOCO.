@@ -40,10 +40,10 @@ export default function HowItWorks() {
       <Card style={{ marginTop: 12 }}>
         <h3>Who we are</h3>
         <p className="muted small">
-          NO MO CO. was founded in 2025 by Apolo, now a senior at Appleton
-          East High School. We run it the way we were taught to run a
-          business — through DECA, Appleton East's business and
-          entrepreneurship program.
+          NO MO CO. was founded in 2025 by Apolo, who is now a senior at
+          Appleton East High School. He built it around what he learned in
+          DECA, Appleton East's business and entrepreneurship program — and
+          we still run it that way.
         </p>
         <p className="muted small">
           DECA is where we learned the parts of a business that are not
